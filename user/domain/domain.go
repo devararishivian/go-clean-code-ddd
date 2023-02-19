@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"io"
 	"time"
 )
 
@@ -38,6 +37,5 @@ type UserUseCase interface {
 }
 
 type UserRepository interface {
-	io.Closer
 	Store(req *NewUserRequest) error
 }
