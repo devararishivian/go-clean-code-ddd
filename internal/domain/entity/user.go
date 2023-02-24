@@ -1,4 +1,4 @@
-package domain
+package entity
 
 import (
 	"time"
@@ -30,12 +30,4 @@ type NewUserRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	RoleID   int    `json:"roleID"`
-}
-
-type UserUseCase interface {
-	Store(req *NewUserRequest) error
-}
-
-type UserRepository interface {
-	Store(req *NewUserRequest) error
 }
