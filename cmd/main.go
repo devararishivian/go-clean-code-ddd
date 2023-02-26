@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/devararishivian/antrekuy/internal/config"
 	"github.com/devararishivian/antrekuy/internal/infrastructure"
 	"github.com/devararishivian/antrekuy/internal/interface/api"
 	"github.com/gofiber/fiber/v2"
@@ -9,9 +10,14 @@ import (
 )
 
 func main() {
-	db, err := infrastructure.NewDatabase()
-	if err != nil {
-		panic(err)
+	errConfig := config.LoadConfig("./internal/config/config.json")
+	if errConfig != nil {
+		panic(errConfig)
+	}
+
+	db, errDB := infrastructure.NewDatabase()
+	if errDB != nil {
+		panic(errDB)
 	}
 
 	app := fiber.New()
@@ -19,5 +25,5 @@ func main() {
 
 	api.RegisterRoutes(app.Group("api"), db)
 
-	log.Fatal(app.Listen(":3000"))
+	log.Fatal(app.Listen(config.Server.Address))
 }

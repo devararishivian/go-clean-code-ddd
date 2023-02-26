@@ -3,7 +3,9 @@ package infrastructure
 import (
 	"context"
 	"fmt"
+	appConfig "github.com/devararishivian/antrekuy/internal/config"
 	"github.com/jackc/pgx/v4"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,11 +20,16 @@ func NewDatabase() (*Database, error) {
 	// Create a new context for the connection
 	ctx := context.Background()
 
-	urlExample := "postgres://postgres:@localhost:5432/personal_antrekuy"
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
+		appConfig.Database.User,
+		appConfig.Database.Password,
+		appConfig.Database.Host,
+		appConfig.Database.Port,
+		appConfig.Database.Name,
+	)
 
 	// Define the database configuration
-	//config, err := pgx.ParseConfig(os.Getenv("DATABASE_URL"))
-	config, err := pgx.ParseConfig(urlExample)
+	config, err := pgx.ParseConfig(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse database config: %w", err)
 	}
@@ -57,7 +64,7 @@ func (db *Database) gracefulShutdown() {
 	defer cancel()
 
 	// Close the database connection
-	db.Conn.Close(ctx)
+	log.Println(db.Conn.Close(ctx))
 
 	os.Exit(0)
 }
