@@ -4,6 +4,7 @@ import (
 	"github.com/devararishivian/antrekuy/internal/infrastructure"
 	"github.com/devararishivian/antrekuy/internal/interface/api"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"log"
 )
 
@@ -14,6 +15,7 @@ func main() {
 	}
 
 	app := fiber.New()
+	app.Use(logger.New())
 
 	api.RegisterRoutes(app.Group("api"), db)
 

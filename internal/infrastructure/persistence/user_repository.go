@@ -1,7 +1,6 @@
 package persistence
 
 import (
-	"fmt"
 	"github.com/devararishivian/antrekuy/internal/domain/entity"
 	"github.com/devararishivian/antrekuy/internal/domain/repository"
 	"github.com/devararishivian/antrekuy/internal/infrastructure"
@@ -18,7 +17,5 @@ func NewUserRepository(db *infrastructure.Database) repository.UserRepository {
 }
 
 func (u *UserRepositoryImpl) Store(user *entity.User) error {
-	fmt.Println("----- user repository -----")
-	fmt.Println(user)
 	return nil
 }
