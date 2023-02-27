@@ -28,6 +28,7 @@ func (h *UserHandler) Store(c *fiber.Ctx) error {
 		)
 	}
 
+	//TODO: rewrite request validation and check valid role ID
 	if req.Name == "" || req.Email == "" || req.Password == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(
 			model.DefaultResponseWithoutData{
@@ -36,7 +37,7 @@ func (h *UserHandler) Store(c *fiber.Ctx) error {
 		)
 	}
 
-	storeRes, err := h.userService.Store(req.Name, req.Email, req.Password)
+	storeRes, err := h.userService.Store(req.Name, req.Email, req.Password, req.RoleID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(
 			model.DefaultResponseWithoutData{
@@ -46,6 +47,8 @@ func (h *UserHandler) Store(c *fiber.Ctx) error {
 	}
 
 	res.Message = "success create user"
+
+	//TODO: refactor create remapping method
 	res.Data = model.UserResponse{
 		ID:        storeRes.ID,
 		Name:      storeRes.Name,
