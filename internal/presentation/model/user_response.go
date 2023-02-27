@@ -2,13 +2,15 @@ package model
 
 import "time"
 
+type UserResponse struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
 type StoreUserResponse struct {
-	Message string `json:"message"`
-	Data    struct {
-		ID        string    `json:"id"`
-		Name      string    `json:"name"`
-		Email     string    `json:"email"`
-		CreatedAt time.Time `json:"createdAt"`
-		UpdatedAt time.Time `json:"updatedAt"`
-	} `json:"data"`
+	Message string       `json:"message"`
+	Data    UserResponse `json:"data"`
 }
