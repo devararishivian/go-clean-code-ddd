@@ -23,5 +23,5 @@ func registerUserRoutesV1(router fiber.Router, db *infrastructure.Database) {
 	handler := NewUserHandler(useCase)
 
 	userRoute := router.Group("user")
-	userRoute.Get("/", handler.Store)
+	userRoute.Post("/", handler.Store)
 }
