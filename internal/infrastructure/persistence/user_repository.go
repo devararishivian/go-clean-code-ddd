@@ -6,8 +6,6 @@ import (
 	"github.com/devararishivian/antrekuy/internal/domain/entity"
 	"github.com/devararishivian/antrekuy/internal/domain/repository"
 	"github.com/devararishivian/antrekuy/internal/infrastructure"
-	"github.com/jackc/pgx/v5"
-	"log"
 )
 
 type UserRepositoryImpl struct {
@@ -20,13 +18,10 @@ func NewUserRepository(db *infrastructure.Database) repository.UserRepository {
 	}
 }
 
-func (u *UserRepositoryImpl) Store(user *entity.User, roleID int) (*entity.User, error) {
-	const (
-		insertUserStmt string = `INSERT INTO "user"(id, name, email, password) 
-						VALUES ($1, $2, $3, $4) 
-						RETURNING id, name, email, created_at, updated_at`
-		insertUserRole string = `INSERT INTO user_has_role(user_id, role_id) VALUES ($1, $2)`
-	)
+func (u *UserRepositoryImpl) Store(user *entity.User) (*entity.User, error) {
+	var insertUserStmt = `INSERT INTO "user"(id, name, email, password, role_id) 
+							VALUES ($1, $2, $3, $4, $5) 
+							RETURNING id, name, email, role_id, created_at, updated_at`
 
 	existingUser, err := u.FindByEmail(user.Email)
 	if err != nil {
@@ -37,67 +32,47 @@ func (u *UserRepositoryImpl) Store(user *entity.User, roleID int) (*entity.User,
 		return nil, errors.New("user with given email already exists")
 	}
 
-	res := new(entity.User)
-
-	tx, err := u.db.Conn.Begin(context.Background())
-	if err != nil {
-		return res, err
-	}
-	defer func(tx pgx.Tx, ctx context.Context) {
-		err := tx.Rollback(ctx)
-		if err != nil {
-			log.Println(err)
-		}
-	}(tx, context.Background())
-
-	err = tx.QueryRow(
+	result := new(entity.User)
+	err = u.db.Conn.QueryRow(
 		context.Background(),
 		insertUserStmt,
 		user.ID,
 		user.Name,
 		user.Email,
 		user.Password,
+		user.Role.ID,
 	).Scan(
-		&res.ID,
-		&res.Name,
-		&res.Email,
-		&res.CreatedAt,
-		&res.UpdatedAt,
+		&result.ID,
+		&result.Name,
+		&result.Email,
+		&result.Role.ID,
+		&result.CreatedAt,
+		&result.UpdatedAt,
 	)
 	if err != nil {
-		return res, err
+		return result, err
 	}
 
-	_, err = tx.Exec(context.Background(), insertUserRole, res.ID, roleID)
-	if err != nil {
-		return res, err
-	}
-
-	err = tx.Commit(context.Background())
-	if err != nil {
-		return res, err
-	}
-
-	return res, nil
+	return result, nil
 }
 
-func (u *UserRepositoryImpl) FindByEmail(email string) (res entity.User, err error) {
+func (u *UserRepositoryImpl) FindByEmail(email string) (result entity.User, err error) {
 	const sql string = `SELECT id, name, email, created_at, updated_at FROM "user" WHERE email = $1`
 
 	err = u.db.Conn.QueryRow(context.Background(), sql, email).Scan(
-		&res.ID,
-		&res.Name,
-		&res.Email,
-		&res.CreatedAt,
-		&res.UpdatedAt,
+		&result.ID,
+		&result.Name,
+		&result.Email,
+		&result.CreatedAt,
+		&result.UpdatedAt,
 	)
 	if err != nil {
 		if err.Error() != "no rows in result set" {
-			return res, err
+			return result, err
 		}
 
-		return res, nil
+		return result, nil
 	}
 
-	return res, nil
+	return result, nil
 }

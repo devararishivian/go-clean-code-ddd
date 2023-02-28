@@ -16,7 +16,7 @@ func NewUserUseCase(userRepository repository.UserRepository) *UserUseCaseImpl {
 	}
 }
 
-func (uc *UserUseCaseImpl) Store(name, email, password string, roleID int) (res *entity.User, err error) {
+func (uc *UserUseCaseImpl) Store(name, email, password string, roleID int) (result *entity.User, err error) {
 	newUser := new(entity.User)
 
 	userID, err := uuid.NewUUID()
@@ -28,7 +28,8 @@ func (uc *UserUseCaseImpl) Store(name, email, password string, roleID int) (res 
 	newUser.Name = name
 	newUser.Email = email
 	newUser.Password = password
+	newUser.Role.ID = roleID
 
-	res, err = uc.userRepository.Store(newUser, roleID)
+	result, err = uc.userRepository.Store(newUser)
 	return
 }
