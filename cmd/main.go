@@ -39,10 +39,15 @@ func main() {
 		panic(errDB)
 	}
 
+	redisClient, errRedisClient := infrastructure.NewRedis()
+	if errRedisClient != nil {
+		panic(errRedisClient)
+	}
+
 	app := fiber.New(fiberConfig)
 	app.Use(logger.New())
 
-	api.RegisterRoutes(app.Group("api"), db)
+	api.RegisterRoutes(app.Group("api"), db, redisClient)
 
 	log.Fatal(app.Listen(config.Server.Address))
 }

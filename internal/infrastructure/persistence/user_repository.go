@@ -57,12 +57,13 @@ func (u *UserRepositoryImpl) Store(user *entity.User) (*entity.User, error) {
 }
 
 func (u *UserRepositoryImpl) FindByEmail(email string) (result entity.User, err error) {
-	var selectUserStmt = `SELECT id, name, email, created_at, updated_at FROM "user" WHERE email = $1`
+	var selectUserStmt = `SELECT id, name, email, password, created_at, updated_at FROM "user" WHERE email = $1`
 
 	err = u.db.Conn.QueryRow(context.Background(), selectUserStmt, email).Scan(
 		&result.ID,
 		&result.Name,
 		&result.Email,
+		&result.Password,
 		&result.CreatedAt,
 		&result.UpdatedAt,
 	)

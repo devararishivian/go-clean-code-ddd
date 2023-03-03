@@ -12,12 +12,19 @@ type database struct {
 	Name     string
 }
 
+type cache struct {
+	Address  string
+	Password string
+	DB       int
+}
+
 type server struct {
 	Address string
 }
 
 var (
 	Database  database
+	Cache     cache
 	Server    server
 	JWTSecret string
 )
@@ -30,6 +37,10 @@ func LoadConfig(path string) error {
 	}
 
 	if err := viper.UnmarshalKey("database", &Database); err != nil {
+		return err
+	}
+
+	if err := viper.UnmarshalKey("cache", &Cache); err != nil {
 		return err
 	}
 

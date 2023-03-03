@@ -39,3 +39,8 @@ func (uc *UserUseCaseImpl) Store(name, email, reqPassword string, roleID int) (r
 	result, err = uc.userRepository.Store(newUser)
 	return
 }
+
+func (uc *UserUseCaseImpl) FindByEmail(email string) (entity.User, error) {
+	user, err := uc.userRepository.FindByEmail(email)
+	return user, err
+}
