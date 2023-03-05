@@ -18,7 +18,10 @@ func NewCacheRepository(redis *infrastructure.Redis) repository.CacheRepository 
 	}
 }
 
-var ctx = context.Background()
+var (
+	ctx                            = context.Background()
+	ErrorInvalidCacheValueTypeHash = errors.New("invalid cache value type, expected map[string]interface{}")
+)
 
 func (c *CacheRepositoryImpl) Set(cache entity.Cache) error {
 	return c.redis.Client.Set(ctx, cache.Key, cache.Value, cache.TTL).Err()
@@ -28,7 +31,7 @@ func (c *CacheRepositoryImpl) HSet(cache entity.Cache) error {
 	// Convert the value to a map[string]interface{} to set as a hash field
 	value, ok := cache.Value.(map[string]interface{})
 	if !ok {
-		return errors.New("invalid cache value type, expected map[string]interface{}")
+		return ErrorInvalidCacheValueTypeHash
 	}
 
 	return c.redis.Client.HSet(ctx, cache.Key, value).Err()
