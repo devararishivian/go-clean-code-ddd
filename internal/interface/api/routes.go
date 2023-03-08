@@ -5,7 +5,12 @@ import (
 	"github.com/devararishivian/antrekuy/internal/infrastructure"
 	"github.com/devararishivian/antrekuy/internal/infrastructure/memory"
 	"github.com/devararishivian/antrekuy/internal/infrastructure/persistence"
+	"github.com/devararishivian/antrekuy/internal/interface/middleware"
 	"github.com/gofiber/fiber/v2"
+)
+
+var (
+	authMiddleware = middleware.Authentication()
 )
 
 func RegisterRoutes(router fiber.Router, db *infrastructure.Database, redisClient *infrastructure.Redis) {
@@ -39,4 +44,7 @@ func registerAuthRoutesV1(router fiber.Router, db *infrastructure.Database, redi
 	route := router.Group("auth")
 	route.Post("/", handler.Authenticate)
 	route.Post("/refresh", handler.RefreshToken)
+	route.Get("/protected", authMiddleware, func(ctx *fiber.Ctx) error {
+		return ctx.JSON("MASOK")
+	})
 }
