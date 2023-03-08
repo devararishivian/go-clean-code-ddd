@@ -10,6 +10,7 @@ import (
 	"github.com/devararishivian/antrekuy/pkg/password"
 	"github.com/devararishivian/antrekuy/pkg/uuid"
 	"github.com/golang-jwt/jwt/v5"
+	"strings"
 	"time"
 )
 
@@ -25,56 +26,123 @@ func NewAuthUseCase(userUseCase service.UserService, cacheRepository repository.
 	}
 }
 
-func (au *AuthUseCaseImpl) Authenticate(email, userPassword string) (err error) {
+func (au *AuthUseCaseImpl) Authenticate(email, userPassword string) (authenticatedUser entity.User, err error) {
 	user, err := au.userUseCase.FindByEmail(email)
 	if err != nil {
-		return err
+		return user, err
 	}
 
 	if user.ID == "" {
-		return errors.New("no user with given email/password")
+		return user, errors.New("no user with given email/password")
 	}
 
 	errComparePassword := password.ComparePassword(user.Password, userPassword)
 	if errComparePassword != nil {
-		return errors.New("no user with given email/password")
+		return user, errors.New("no user with given email/password")
 	}
 
-	return nil
+	return user, nil
 }
 
-func (au *AuthUseCaseImpl) Revoke(email string) error {
-	return nil
-}
-
-func (s *AuthUseCaseImpl) GenerateToken(email string) (accessToken, refreshToken string, err error) {
-	// Generate the access token
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["email"] = email
-	claims["exp"] = time.Now().Add(time.Hour * 1).Unix()
-
-	accessToken, err = token.SignedString([]byte(appConfig.JWTSecret))
+func (au *AuthUseCaseImpl) GenerateToken(user entity.User) (accessToken, refreshToken string, err error) {
+	accessToken, err = au.generateAccessToken(user)
 	if err != nil {
-		return "", "", errors.New("failed to generate access token")
+		return "", "", err
 	}
 
 	// Generate the refresh token
-	refreshToken, err = uuid.NewUUID()
+	refreshToken, err = au.generateRefreshToken(user.ID)
 	if err != nil {
-		return "", "", errors.New("failed to generate refresh token")
+		return "", "", err
 	}
 
+	return accessToken, refreshToken, nil
+}
+
+func (au *AuthUseCaseImpl) generateAccessToken(user entity.User) (accessToken string, err error) {
+	claims := jwt.MapClaims{
+		"id":    user.ID,
+		"name":  user.Name,
+		"email": user.Email,
+		"role":  user.Role.ID,
+		"exp":   time.Now().Add(time.Hour * 12).Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	accessToken, err = token.SignedString([]byte(appConfig.JWTSecret))
+	if err != nil {
+		return "", errors.New("failed to generate access token")
+	}
+
+	return accessToken, nil
+}
+
+func (au *AuthUseCaseImpl) RefreshToken(accessToken, refreshToken string) (newAccessToken, newRefreshToken string, err error) {
+	token, err := jwt.ParseWithClaims(accessToken, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(appConfig.JWTSecret), nil
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("failed to parse access token: %v", err)
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return "", "", errors.New("invalid access token")
+	}
+
+	userIDFromClaims := claims["id"].(string)
+	formattedUserID := strings.ReplaceAll(userIDFromClaims, "-", "_")
+	cacheKey := fmt.Sprintf("refresh_token:%s", formattedUserID)
+	cachedRefreshToken, err := au.cacheRepository.Get(cacheKey)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get cached refresh token: %v", err)
+	}
+
+	if cachedRefreshToken.Value != refreshToken {
+		return "", "", errors.New("invalid refresh token")
+	}
+
+	user, err := au.userUseCase.FindByID(userIDFromClaims)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get user: %v", err)
+	}
+
+	newAccessToken, err = au.generateAccessToken(user)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to generate new access token: %v", err)
+	}
+
+	newRefreshToken, err = au.generateRefreshToken(user.ID)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to generate new refresh token: %v", err)
+	}
+
+	return newAccessToken, newRefreshToken, nil
+}
+
+func (au *AuthUseCaseImpl) generateRefreshToken(userID string) (refreshToken string, err error) {
+	refreshToken, err = uuid.NewUUID()
+	if err != nil {
+		return "", errors.New("failed to generate refresh token")
+	}
+
+	formattedUserID := strings.ReplaceAll(userID, "-", "_")
+	cacheKey := fmt.Sprintf("refresh_token:%s", formattedUserID)
+
 	cacheData := entity.Cache{
-		Key:   fmt.Sprintf("refresh_token:%s", email),
+		Key:   cacheKey,
 		Value: refreshToken,
 		TTL:   time.Hour * 24 * 7,
 	}
 
-	err = s.cacheRepository.Set(cacheData)
+	err = au.cacheRepository.Set(cacheData)
 	if err != nil {
-		return "", "", errors.New("failed to save refresh token")
+		return "", errors.New("failed to save refresh token")
 	}
 
-	return accessToken, refreshToken, nil
+	return refreshToken, nil
 }

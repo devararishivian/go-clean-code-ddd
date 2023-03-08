@@ -44,3 +44,8 @@ func (uc *UserUseCaseImpl) FindByEmail(email string) (entity.User, error) {
 	user, err := uc.userRepository.FindByEmail(email)
 	return user, err
 }
+
+func (uc *UserUseCaseImpl) FindByID(id string) (entity.User, error) {
+	user, err := uc.userRepository.FindByID(id)
+	return user, err
+}

@@ -31,12 +31,12 @@ func (h *AuthHandler) Authenticate(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(err)
 	}
 
-	errAuthenticate := h.authService.Authenticate(request.Email, request.Password)
-	if errAuthenticate != nil {
-		return fiber.NewError(fiber.StatusUnauthorized, errAuthenticate.Error())
+	authenticatedUser, err := h.authService.Authenticate(request.Email, request.Password)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, err.Error())
 	}
 
-	accessToken, refreshToken, err := h.authService.GenerateToken(request.Email)
+	accessToken, refreshToken, err := h.authService.GenerateToken(authenticatedUser)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}

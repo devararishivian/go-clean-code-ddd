@@ -77,3 +77,25 @@ func (u *UserRepositoryImpl) FindByEmail(email string) (result entity.User, err 
 
 	return result, nil
 }
+
+func (u *UserRepositoryImpl) FindByID(id string) (result entity.User, err error) {
+	var selectUserStmt = `SELECT id, name, email, password, created_at, updated_at FROM "user" WHERE id = $1`
+
+	err = u.db.Conn.QueryRow(context.Background(), selectUserStmt, id).Scan(
+		&result.ID,
+		&result.Name,
+		&result.Email,
+		&result.Password,
+		&result.CreatedAt,
+		&result.UpdatedAt,
+	)
+	if err != nil {
+		if err.Error() != "no rows in result set" {
+			return result, err
+		}
+
+		return result, nil
+	}
+
+	return result, nil
+}
