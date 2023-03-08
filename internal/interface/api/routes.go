@@ -38,4 +38,5 @@ func registerAuthRoutesV1(router fiber.Router, db *infrastructure.Database, redi
 
 	route := router.Group("auth")
 	route.Post("/", handler.Authenticate)
+	route.Post("/refresh", handler.RefreshToken)
 }

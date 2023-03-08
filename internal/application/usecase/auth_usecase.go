@@ -79,10 +79,11 @@ func (au *AuthUseCaseImpl) generateAccessToken(user entity.User) (accessToken st
 }
 
 func (au *AuthUseCaseImpl) RefreshToken(accessToken, refreshToken string) (newAccessToken, newRefreshToken string, err error) {
-	token, err := jwt.ParseWithClaims(accessToken, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(accessToken, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
+
 		return []byte(appConfig.JWTSecret), nil
 	})
 	if err != nil {
