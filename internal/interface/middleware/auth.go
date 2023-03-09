@@ -1,61 +1,69 @@
 package middleware
 
 import (
-	"errors"
-	appConfig "github.com/devararishivian/antrekuy/internal/config"
+	"fmt"
+	"github.com/devararishivian/antrekuy/internal/domain/service"
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
+	"net/http"
 	"strings"
 )
 
-func Authentication() fiber.Handler {
+const (
+	authHeader      = "Authorization"
+	authBearerToken = "Bearer "
+)
+
+type AuthMiddleware struct {
+	authUseCase service.AuthService
+}
+
+func NewAuthMiddleware(authUseCase service.AuthService) *AuthMiddleware {
+	return &AuthMiddleware{
+		authUseCase: authUseCase,
+	}
+}
+
+func (a *AuthMiddleware) RequireAuth() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Get the Authorization header from the request
-		authHeader := c.Get("Authorization")
+		authorizationHeader := c.Get(authHeader)
 
-		// Check if the header exists
-		if authHeader == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Missing Authorization header"})
+		if authorizationHeader == "" {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"code":    "ErrMissingAuthHeader",
+				"message": "Authorization header is missing",
+			})
 		}
 
-		// Check if the header has the correct format
-		headerParts := strings.Split(authHeader, " ")
-		if len(headerParts) != 2 || headerParts[0] != "Bearer" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid Authorization header format"})
+		if !strings.HasPrefix(authorizationHeader, authBearerToken) {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"code":    "ErrInvalidAuthHeaderFormat",
+				"message": "Invalid authorization header format",
+			})
 		}
 
-		// Parse the token
-		tokenString := headerParts[1]
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			// Check signing method
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, errors.New("invalid signing method")
-			}
-
-			// Return the secret key
-			return []byte(appConfig.JWTSecret), nil
-		})
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid or expired token"})
+		tokenString := strings.TrimPrefix(authorizationHeader, authBearerToken)
+		tokenClaims, errCode, errMessage := a.authUseCase.ValidateToken(tokenString)
+		if errCode != "" {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"code":    errCode,
+				"message": errMessage,
+			})
 		}
 
-		// Check if the token is valid
-		if !token.Valid {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid or expired token"})
-		}
-
-		// Get the user ID from the token claims
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid token claims"})
-		}
-		userID, ok := claims["id"].(string)
+		userID, ok := tokenClaims["id"].(string)
 		if !ok {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid token claims"})
 		}
 
-		// Set the user ID in the request context
+		roleID, ok := tokenClaims["role"]
+		if !ok {
+			fmt.Println(tokenClaims["role"])
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid token claims"})
+		}
+
+		// Set the user data in the request context
 		c.Locals("userID", userID)
+		c.Locals("roleID", roleID)
 
 		// Call the next middleware
 		return c.Next()

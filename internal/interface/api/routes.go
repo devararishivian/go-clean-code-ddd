@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	authMiddleware = middleware.Authentication()
+	authMiddleware *middleware.AuthMiddleware
 )
 
 func RegisterRoutes(router fiber.Router, db *infrastructure.Database, redisClient *infrastructure.Redis) {
@@ -41,10 +41,12 @@ func registerAuthRoutesV1(router fiber.Router, db *infrastructure.Database, redi
 	useCase := usecase.NewAuthUseCase(userUseCase, cacheRepository)
 	handler := NewAuthHandler(useCase)
 
+	authMiddleware = middleware.NewAuthMiddleware(useCase)
+
 	route := router.Group("auth")
 	route.Post("/", handler.Authenticate)
 	route.Post("/refresh", handler.RefreshToken)
-	route.Get("/protected", authMiddleware, func(ctx *fiber.Ctx) error {
+	route.Get("/protected", authMiddleware.RequireAuth(), func(ctx *fiber.Ctx) error {
 		return ctx.JSON("MASOK")
 	})
 }

@@ -79,23 +79,14 @@ func (au *AuthUseCaseImpl) generateAccessToken(user entity.User) (accessToken st
 }
 
 func (au *AuthUseCaseImpl) RefreshToken(accessToken, refreshToken string) (newAccessToken, newRefreshToken string, err error) {
-	token, err := jwt.Parse(accessToken, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+	tokenClaims, errCode, errMessage := au.ValidateToken(accessToken)
+	if errCode != "" {
+		if errCode != "ErrExpiredToken" {
+			return "", "", fmt.Errorf("failed to validate access token: %v", errMessage)
 		}
-
-		return []byte(appConfig.JWTSecret), nil
-	})
-	if err != nil {
-		return "", "", fmt.Errorf("failed to parse access token: %v", err)
 	}
 
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
-		return "", "", errors.New("invalid access token")
-	}
-
-	userIDFromClaims := claims["id"].(string)
+	userIDFromClaims := tokenClaims["id"].(string)
 	formattedUserID := strings.ReplaceAll(userIDFromClaims, "-", "_")
 	cacheKey := fmt.Sprintf("refresh_token:%s", formattedUserID)
 	cachedRefreshToken, err := au.cacheRepository.Get(cacheKey)
@@ -146,4 +137,38 @@ func (au *AuthUseCaseImpl) generateRefreshToken(userID string) (refreshToken str
 	}
 
 	return refreshToken, nil
+}
+
+func (au *AuthUseCaseImpl) ValidateToken(accessToken string) (claims jwt.MapClaims, errCode, errMessage string) {
+	token, err := jwt.Parse(accessToken, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+
+		return []byte(appConfig.JWTSecret), nil
+	})
+
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			return nil, "ErrSignatureInvalid", jwt.ErrSignatureInvalid.Error()
+		} else if err.Error() != fmt.Sprintf("%s: %s", jwt.ErrTokenInvalidClaims.Error(), jwt.ErrTokenExpired.Error()) {
+			return nil, "ErrInvalidToken", err.Error()
+		}
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		expirationTime, ok := claims["exp"].(float64)
+		if !ok {
+			return nil, "ErrInvalidToken", jwt.ErrTokenInvalidClaims.Error()
+		}
+
+		if time.Now().Unix() > int64(expirationTime) {
+			return claims, "ErrExpiredToken", jwt.ErrTokenExpired.Error()
+		}
+
+		return nil, "ErrInvalidToken", jwt.ErrTokenInvalidClaims.Error()
+	}
+
+	return claims, "", ""
 }
