@@ -186,9 +186,10 @@ func (au *AuthUseCaseImpl) getTokenFromCache(userID string) (accessToken, refres
 		return "", "", err
 	}
 
-	if valMap, ok := val.Value.(map[string]string); ok {
-		return valMap["access_token"], valMap["refresh_token"], nil
+	valMap := make(map[string]string, len(val.Value.(map[string]any)))
+	for k, v := range val.Value.(map[string]any) {
+		valMap[k] = v.(string)
 	}
 
-	return "", "", errors.New("unexpected type for value in cache")
+	return valMap["access_token"], valMap["refresh_token"], nil
 }
