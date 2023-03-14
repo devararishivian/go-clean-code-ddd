@@ -14,7 +14,6 @@ import (
 	"time"
 )
 
-// TODO: Refactor auth data (access & refresh token) caching to use HSet
 // TODO: Refactor error const
 
 type AuthUseCaseImpl struct {
@@ -53,8 +52,12 @@ func (au *AuthUseCaseImpl) GenerateToken(user entity.User) (accessToken, refresh
 		return "", "", err
 	}
 
-	// Generate the refresh token
-	refreshToken, err = au.generateRefreshToken(user.ID)
+	refreshToken, err = au.generateRefreshToken()
+	if err != nil {
+		return "", "", err
+	}
+
+	err = au.storeTokenToCache(user.ID, accessToken, refreshToken)
 	if err != nil {
 		return "", "", err
 	}
@@ -90,14 +93,12 @@ func (au *AuthUseCaseImpl) RefreshToken(accessToken, refreshToken string) (newAc
 	}
 
 	userIDFromClaims := tokenClaims["id"].(string)
-	formattedUserID := strings.ReplaceAll(userIDFromClaims, "-", "_")
-	cacheKey := fmt.Sprintf("refresh_token:%s", formattedUserID)
-	cachedRefreshToken, err := au.cacheRepository.Get(cacheKey)
+	_, cachedRefreshToken, err := au.getTokenFromCache(userIDFromClaims)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get cached refresh token: %v", err)
+		return "", "", fmt.Errorf("failed to get cached token: %v", err)
 	}
 
-	if cachedRefreshToken.Value != refreshToken {
+	if cachedRefreshToken != refreshToken {
 		return "", "", errors.New("invalid refresh token")
 	}
 
@@ -106,37 +107,18 @@ func (au *AuthUseCaseImpl) RefreshToken(accessToken, refreshToken string) (newAc
 		return "", "", fmt.Errorf("failed to get user: %v", err)
 	}
 
-	newAccessToken, err = au.generateAccessToken(user)
+	newAccessToken, newRefreshToken, err = au.GenerateToken(user)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to generate new access token: %v", err)
-	}
-
-	newRefreshToken, err = au.generateRefreshToken(user.ID)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to generate new refresh token: %v", err)
+		return "", "", fmt.Errorf("failed to generate new token: %v", err)
 	}
 
 	return newAccessToken, newRefreshToken, nil
 }
 
-func (au *AuthUseCaseImpl) generateRefreshToken(userID string) (refreshToken string, err error) {
+func (au *AuthUseCaseImpl) generateRefreshToken() (refreshToken string, err error) {
 	refreshToken, err = uuid.NewUUID()
 	if err != nil {
 		return "", errors.New("failed to generate refresh token")
-	}
-
-	formattedUserID := strings.ReplaceAll(userID, "-", "_")
-	cacheKey := fmt.Sprintf("refresh_token:%s", formattedUserID)
-
-	cacheData := entity.Cache{
-		Key:   cacheKey,
-		Value: refreshToken,
-		TTL:   time.Hour * 24 * 7,
-	}
-
-	err = au.cacheRepository.Set(cacheData)
-	if err != nil {
-		return "", errors.New("failed to save refresh token")
 	}
 
 	return refreshToken, nil
@@ -174,4 +156,39 @@ func (au *AuthUseCaseImpl) ValidateToken(accessToken string) (claims jwt.MapClai
 	}
 
 	return claims, "", ""
+}
+
+func (au *AuthUseCaseImpl) storeTokenToCache(userID, accessToken, refreshToken string) error {
+	formattedUserID := strings.ReplaceAll(userID, "-", "")
+
+	cacheData := entity.Cache{
+		Key: fmt.Sprintf("auth:%s", formattedUserID),
+		Value: map[string]interface{}{
+			"access_token":  accessToken,
+			"refresh_token": refreshToken,
+		},
+		TTL: time.Hour * 24 * 7,
+	}
+
+	err := au.cacheRepository.HSet(cacheData)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (au *AuthUseCaseImpl) getTokenFromCache(userID string) (accessToken, refreshToken string, err error) {
+	formattedUserID := strings.ReplaceAll(userID, "-", "")
+
+	val, err := au.cacheRepository.HGetAll(formattedUserID)
+	if err != nil {
+		return "", "", err
+	}
+
+	if valMap, ok := val.Value.(map[string]string); ok {
+		return valMap["access_token"], valMap["refresh_token"], nil
+	}
+
+	return "", "", errors.New("unexpected type for value in cache")
 }

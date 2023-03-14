@@ -8,8 +8,6 @@ import (
 	"github.com/devararishivian/antrekuy/internal/infrastructure"
 )
 
-// TODO: Refactor HGet to use HGet and add new method for HGetAll
-
 type CacheRepositoryImpl struct {
 	redis *infrastructure.Redis
 }
