@@ -14,6 +14,9 @@ import (
 	"time"
 )
 
+// TODO: Refactor auth data (access & refresh token) caching to use HSet
+// TODO: Refactor error const
+
 type AuthUseCaseImpl struct {
 	userUseCase     service.UserService
 	cacheRepository repository.CacheRepository

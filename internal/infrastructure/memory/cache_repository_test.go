@@ -2,7 +2,6 @@ package memory_test
 
 import (
 	"errors"
-	"fmt"
 	"github.com/go-redis/redismock/v9"
 	"testing"
 	"time"
@@ -63,7 +62,6 @@ func TestCacheRepositoryImpl(t *testing.T) {
 		}
 
 		err := cacheRepository.HSet(cache)
-		fmt.Println(err)
 
 		assert.Error(t, err)
 		assert.True(t, errors.Is(err, memory.ErrorInvalidCacheValueTypeHash))
@@ -85,6 +83,21 @@ func TestCacheRepositoryImpl(t *testing.T) {
 
 	t.Run("HGet", func(t *testing.T) {
 		key := "key"
+		field := "field"
+		value := "value"
+
+		mock.ExpectHGet(key, field).SetVal("value")
+
+		result, err := cacheRepository.HGet(key, field)
+
+		assert.NoError(t, err)
+		assert.Equal(t, key, result.Key)
+		assert.Equal(t, value, result.Value)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("HGetAll", func(t *testing.T) {
+		key := "key"
 		value := map[string]interface{}{
 			"field1": "value1",
 			"field2": "2",
@@ -97,7 +110,7 @@ func TestCacheRepositoryImpl(t *testing.T) {
 			"field3": "true",
 		})
 
-		result, err := cacheRepository.HGet(key)
+		result, err := cacheRepository.HGetAll(key)
 
 		assert.NoError(t, err)
 		assert.Equal(t, key, result.Key)

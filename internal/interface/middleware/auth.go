@@ -13,6 +13,8 @@ const (
 	authBearerToken = "Bearer "
 )
 
+// TODO: Refactor hardcoded const
+
 type AuthMiddleware struct {
 	authUseCase service.AuthService
 }

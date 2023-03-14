@@ -8,6 +8,8 @@ import (
 	"github.com/devararishivian/antrekuy/internal/infrastructure"
 )
 
+// TODO: Refactor HGet to use HGet and add new method for HGetAll
+
 type CacheRepositoryImpl struct {
 	redis *infrastructure.Redis
 }
@@ -28,7 +30,6 @@ func (c *CacheRepositoryImpl) Set(cache entity.Cache) error {
 }
 
 func (c *CacheRepositoryImpl) HSet(cache entity.Cache) error {
-	// Convert the value to a map[string]interface{} to set as a hash field
 	value, ok := cache.Value.(map[string]interface{})
 	if !ok {
 		return ErrorInvalidCacheValueTypeHash
@@ -49,20 +50,33 @@ func (c *CacheRepositoryImpl) Get(key string) (result entity.Cache, err error) {
 	return result, nil
 }
 
-func (c *CacheRepositoryImpl) HGet(key string) (entity.Cache, error) {
+func (c *CacheRepositoryImpl) HGet(key, field string) (entity.Cache, error) {
 	result := entity.Cache{
 		Key: key,
 	}
 
-	// Use the Redis HGetAll command to get all the hash fields and values
-	vals, err := c.redis.Client.HGetAll(ctx, key).Result()
+	val, err := c.redis.Client.HGet(ctx, key, field).Result()
 	if err != nil {
 		return result, err
 	}
 
-	// Convert the map[string]string returned by HGetAll to map[string]interface{}
-	valMap := make(map[string]interface{}, len(vals))
-	for k, v := range vals {
+	result.Value = val
+
+	return result, nil
+}
+
+func (c *CacheRepositoryImpl) HGetAll(key string) (entity.Cache, error) {
+	result := entity.Cache{
+		Key: key,
+	}
+
+	values, err := c.redis.Client.HGetAll(ctx, key).Result()
+	if err != nil {
+		return result, err
+	}
+
+	valMap := make(map[string]interface{}, len(values))
+	for k, v := range values {
 		valMap[k] = v
 	}
 

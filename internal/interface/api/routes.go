@@ -13,6 +13,8 @@ var (
 	authMiddleware *middleware.AuthMiddleware
 )
 
+// TODO: Refactor Dependency Injection to reuse auth middleware
+
 func RegisterRoutes(router fiber.Router, db *infrastructure.Database, redisClient *infrastructure.Redis) {
 	router.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Hello, World!")
