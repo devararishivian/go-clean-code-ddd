@@ -46,7 +46,10 @@ func TestCacheRepositoryImpl(t *testing.T) {
 			TTL: 10 * time.Second,
 		}
 
+		mock.ExpectTxPipeline()
 		mock.ExpectHSet(cache.Key, cache.Value).SetVal(1)
+		mock.ExpectExpire(cache.Key, cache.TTL).SetVal(true)
+		mock.ExpectTxPipelineExec()
 
 		err := cacheRepository.HSet(cache)
 

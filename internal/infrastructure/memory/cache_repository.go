@@ -6,6 +6,7 @@ import (
 	"github.com/devararishivian/antrekuy/internal/domain/entity"
 	"github.com/devararishivian/antrekuy/internal/domain/repository"
 	"github.com/devararishivian/antrekuy/internal/infrastructure"
+	"github.com/redis/go-redis/v9"
 )
 
 type CacheRepositoryImpl struct {
@@ -33,7 +34,16 @@ func (c *CacheRepositoryImpl) HSet(cache entity.Cache) error {
 		return ErrorInvalidCacheValueTypeHash
 	}
 
-	return c.redis.Client.HSet(ctx, cache.Key, value).Err()
+	_, err := c.redis.Client.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+		pipe.HSet(ctx, cache.Key, value)
+		pipe.Expire(ctx, cache.Key, cache.TTL)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *CacheRepositoryImpl) Get(key string) (result entity.Cache, err error) {
