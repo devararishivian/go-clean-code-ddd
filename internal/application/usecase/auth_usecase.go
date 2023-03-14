@@ -155,6 +155,15 @@ func (au *AuthUseCaseImpl) ValidateToken(accessToken string) (claims jwt.MapClai
 		return nil, "ErrInvalidToken", jwt.ErrTokenInvalidClaims.Error()
 	}
 
+	existingAccessToken, _, err := au.getTokenFromCache(claims["id"].(string))
+	if err != nil {
+		return nil, "ErrInvalidToken", err.Error()
+	}
+
+	if existingAccessToken != accessToken {
+		return nil, "ErrInvalidToken", jwt.ErrTokenNotValidYet.Error()
+	}
+
 	return claims, "", ""
 }
 
