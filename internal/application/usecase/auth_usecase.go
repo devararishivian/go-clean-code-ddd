@@ -181,7 +181,7 @@ func (au *AuthUseCaseImpl) storeTokenToCache(userID, accessToken, refreshToken s
 func (au *AuthUseCaseImpl) getTokenFromCache(userID string) (accessToken, refreshToken string, err error) {
 	formattedUserID := strings.ReplaceAll(userID, "-", "")
 
-	val, err := au.cacheRepository.HGetAll(formattedUserID)
+	val, err := au.cacheRepository.HGetAll(fmt.Sprintf("auth:%s", formattedUserID))
 	if err != nil {
 		return "", "", err
 	}
