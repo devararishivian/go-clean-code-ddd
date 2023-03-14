@@ -73,7 +73,7 @@ func (c *CacheRepositoryImpl) HGetAll(key string) (entity.Cache, error) {
 		return result, err
 	}
 
-	valMap := make(map[string]interface{}, len(values))
+	valMap := make(map[string]any, len(values))
 	for k, v := range values {
 		valMap[k] = v
 	}

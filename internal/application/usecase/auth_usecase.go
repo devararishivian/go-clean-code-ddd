@@ -180,15 +180,22 @@ func (au *AuthUseCaseImpl) storeTokenToCache(userID, accessToken, refreshToken s
 
 func (au *AuthUseCaseImpl) getTokenFromCache(userID string) (accessToken, refreshToken string, err error) {
 	formattedUserID := strings.ReplaceAll(userID, "-", "")
+	key := "auth:" + formattedUserID
 
-	val, err := au.cacheRepository.HGetAll(fmt.Sprintf("auth:%s", formattedUserID))
+	val, err := au.cacheRepository.HGetAll(key)
 	if err != nil {
 		return "", "", err
 	}
 
-	valMap := make(map[string]string, len(val.Value.(map[string]any)))
-	for k, v := range val.Value.(map[string]any) {
-		valMap[k] = v.(string)
+	valMap := map[string]string{}
+	if val.Value != nil {
+		if valMapRaw, ok := val.Value.(map[string]any); ok {
+			for k, v := range valMapRaw {
+				valMap[k] = v.(string)
+			}
+		} else {
+			return "", "", fmt.Errorf("unexpected value type: %T", val.Value)
+		}
 	}
 
 	return valMap["access_token"], valMap["refresh_token"], nil
