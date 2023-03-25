@@ -92,3 +92,7 @@ func (c *CacheRepositoryImpl) HGetAll(key string) (entity.Cache, error) {
 
 	return result, nil
 }
+
+func (c *CacheRepositoryImpl) Del(key string) error {
+	return c.redis.Client.Del(ctx, key).Err()
+}

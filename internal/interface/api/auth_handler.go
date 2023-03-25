@@ -44,3 +44,23 @@ func (h *AuthHandler) Authenticate(c *fiber.Ctx) error {
 	result.AccessToken = accessToken
 	return c.Status(fiber.StatusOK).JSON(result)
 }
+
+func (h *AuthHandler) UnAuthenticate(c *fiber.Ctx) error {
+	request := new(model.UnAuthRequest)
+
+	if err := c.BodyParser(request); err != nil {
+		return fiber.NewError(fiber.StatusUnprocessableEntity, err.Error())
+	}
+
+	if err := h.validator.Validate(request); err.ValidationError != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(err)
+	}
+
+	if err := h.authService.UnAuthenticate(request.Email); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "success un-authenticate user",
+	})
+}

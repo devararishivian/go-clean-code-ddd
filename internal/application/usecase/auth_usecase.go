@@ -45,6 +45,25 @@ func (au *AuthUseCaseImpl) Authenticate(email, userPassword string) (authenticat
 	return user, nil
 }
 
+func (au *AuthUseCaseImpl) UnAuthenticate(email string) error {
+	user, err := au.userUseCase.FindByEmail(email)
+	if err != nil {
+		return err
+	}
+
+	if user.ID == "" {
+		return errors.New("failed to un-authenticate")
+	}
+
+	formattedUserID := strings.ReplaceAll(user.ID, "-", "")
+	err = au.cacheRepository.Del(fmt.Sprintf("auth:%s", formattedUserID))
+	if err != nil {
+		return errors.New("failed to un-authenticate")
+	}
+
+	return nil
+}
+
 func (au *AuthUseCaseImpl) GenerateToken(user entity.User) (accessToken string, err error) {
 	accessToken, err = au.generateAccessToken(user)
 	if err != nil {
