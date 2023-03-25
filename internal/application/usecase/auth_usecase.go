@@ -8,7 +8,6 @@ import (
 	"github.com/devararishivian/antrekuy/internal/domain/repository"
 	"github.com/devararishivian/antrekuy/internal/domain/service"
 	"github.com/devararishivian/antrekuy/pkg/password"
-	"github.com/devararishivian/antrekuy/pkg/uuid"
 	"github.com/golang-jwt/jwt/v5"
 	"strings"
 	"time"
@@ -46,23 +45,18 @@ func (au *AuthUseCaseImpl) Authenticate(email, userPassword string) (authenticat
 	return user, nil
 }
 
-func (au *AuthUseCaseImpl) GenerateToken(user entity.User) (accessToken, refreshToken string, err error) {
+func (au *AuthUseCaseImpl) GenerateToken(user entity.User) (accessToken string, err error) {
 	accessToken, err = au.generateAccessToken(user)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
-	refreshToken, err = au.generateRefreshToken()
+	err = au.storeTokenToCache(user.ID, accessToken)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
-	err = au.storeTokenToCache(user.ID, accessToken, refreshToken)
-	if err != nil {
-		return "", "", err
-	}
-
-	return accessToken, refreshToken, nil
+	return accessToken, nil
 }
 
 func (au *AuthUseCaseImpl) generateAccessToken(user entity.User) (accessToken string, err error) {
@@ -82,46 +76,6 @@ func (au *AuthUseCaseImpl) generateAccessToken(user entity.User) (accessToken st
 	}
 
 	return accessToken, nil
-}
-
-func (au *AuthUseCaseImpl) RefreshToken(accessToken, refreshToken string) (newAccessToken, newRefreshToken string, err error) {
-	tokenClaims, errCode, errMessage := au.ValidateToken(accessToken)
-	if errCode != "" {
-		if errCode != "ErrExpiredToken" {
-			return "", "", fmt.Errorf("failed to validate access token: %v", errMessage)
-		}
-	}
-
-	userIDFromClaims := tokenClaims["id"].(string)
-	_, cachedRefreshToken, err := au.getTokenFromCache(userIDFromClaims)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to get cached token: %v", err)
-	}
-
-	if cachedRefreshToken != refreshToken {
-		return "", "", errors.New("invalid refresh token")
-	}
-
-	user, err := au.userUseCase.FindByID(userIDFromClaims)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to get user: %v", err)
-	}
-
-	newAccessToken, newRefreshToken, err = au.GenerateToken(user)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to generate new token: %v", err)
-	}
-
-	return newAccessToken, newRefreshToken, nil
-}
-
-func (au *AuthUseCaseImpl) generateRefreshToken() (refreshToken string, err error) {
-	refreshToken, err = uuid.NewUUID()
-	if err != nil {
-		return "", errors.New("failed to generate refresh token")
-	}
-
-	return refreshToken, nil
 }
 
 func (au *AuthUseCaseImpl) ValidateToken(accessToken string) (claims jwt.MapClaims, errCode, errMessage string) {
@@ -155,7 +109,7 @@ func (au *AuthUseCaseImpl) ValidateToken(accessToken string) (claims jwt.MapClai
 		return nil, "ErrInvalidToken", jwt.ErrTokenInvalidClaims.Error()
 	}
 
-	existingAccessToken, _, err := au.getTokenFromCache(claims["id"].(string))
+	existingAccessToken, err := au.getTokenFromCache(claims["id"].(string))
 	if err != nil {
 		return nil, "ErrInvalidToken", err.Error()
 	}
@@ -167,14 +121,13 @@ func (au *AuthUseCaseImpl) ValidateToken(accessToken string) (claims jwt.MapClai
 	return claims, "", ""
 }
 
-func (au *AuthUseCaseImpl) storeTokenToCache(userID, accessToken, refreshToken string) error {
+func (au *AuthUseCaseImpl) storeTokenToCache(userID, accessToken string) error {
 	formattedUserID := strings.ReplaceAll(userID, "-", "")
 
 	cacheData := entity.Cache{
 		Key: fmt.Sprintf("auth:%s", formattedUserID),
 		Value: map[string]interface{}{
-			"access_token":  accessToken,
-			"refresh_token": refreshToken,
+			"access_token": accessToken,
 		},
 		TTL: time.Hour * 24 * 7,
 	}
@@ -187,13 +140,13 @@ func (au *AuthUseCaseImpl) storeTokenToCache(userID, accessToken, refreshToken s
 	return nil
 }
 
-func (au *AuthUseCaseImpl) getTokenFromCache(userID string) (accessToken, refreshToken string, err error) {
+func (au *AuthUseCaseImpl) getTokenFromCache(userID string) (accessToken string, err error) {
 	formattedUserID := strings.ReplaceAll(userID, "-", "")
 	key := "auth:" + formattedUserID
 
 	val, err := au.cacheRepository.HGetAll(key)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	valMap := map[string]string{}
@@ -203,9 +156,9 @@ func (au *AuthUseCaseImpl) getTokenFromCache(userID string) (accessToken, refres
 				valMap[k] = v.(string)
 			}
 		} else {
-			return "", "", fmt.Errorf("unexpected value type: %T", val.Value)
+			return "", fmt.Errorf("unexpected value type: %T", val.Value)
 		}
 	}
 
-	return valMap["access_token"], valMap["refresh_token"], nil
+	return valMap["access_token"], nil
 }

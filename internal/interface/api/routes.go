@@ -47,7 +47,6 @@ func registerAuthRoutesV1(router fiber.Router, db *infrastructure.Database, redi
 
 	route := router.Group("auth")
 	route.Post("/", handler.Authenticate)
-	route.Post("/refresh", handler.RefreshToken)
 	route.Get("/protected", authMiddleware.RequireAuth(), func(ctx *fiber.Ctx) error {
 		return ctx.JSON("MASOK")
 	})
