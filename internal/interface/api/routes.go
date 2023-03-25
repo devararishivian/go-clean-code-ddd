@@ -20,6 +20,7 @@ func RegisterRoutes(router fiber.Router, db *infrastructure.Database, redisClien
 
 	v1Route := router.Group("v1")
 
+	// registerAuthRoutesV1 must called before registering other routes
 	registerAuthRoutesV1(v1Route, db, redisClient)
 	registerUserRoutesV1(v1Route, db)
 }
