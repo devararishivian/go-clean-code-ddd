@@ -1,11 +1,11 @@
 package api
 
 import (
-	"github.com/devararishivian/antrekuy/internal/application/usecase"
-	"github.com/devararishivian/antrekuy/internal/infrastructure"
-	"github.com/devararishivian/antrekuy/internal/infrastructure/memory"
-	"github.com/devararishivian/antrekuy/internal/infrastructure/persistence"
-	"github.com/devararishivian/antrekuy/internal/interface/middleware"
+	"github.com/devararishivian/go-clean-code-ddd/internal/application/usecase"
+	"github.com/devararishivian/go-clean-code-ddd/internal/infrastructure"
+	"github.com/devararishivian/go-clean-code-ddd/internal/infrastructure/memory"
+	"github.com/devararishivian/go-clean-code-ddd/internal/infrastructure/persistence"
+	"github.com/devararishivian/go-clean-code-ddd/internal/interface/middleware"
 	"github.com/gofiber/fiber/v2"
 )
 

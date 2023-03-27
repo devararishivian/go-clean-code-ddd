@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/devararishivian/antrekuy/internal/domain/entity"
-	"github.com/devararishivian/antrekuy/internal/infrastructure"
-	"github.com/devararishivian/antrekuy/internal/infrastructure/memory"
+	"github.com/devararishivian/go-clean-code-ddd/internal/domain/entity"
+	"github.com/devararishivian/go-clean-code-ddd/internal/infrastructure"
+	"github.com/devararishivian/go-clean-code-ddd/internal/infrastructure/memory"
 	"github.com/stretchr/testify/assert"
 )
 

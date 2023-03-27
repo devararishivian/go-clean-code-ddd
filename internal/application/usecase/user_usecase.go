@@ -1,10 +1,10 @@
 package usecase
 
 import (
-	"github.com/devararishivian/antrekuy/internal/domain/entity"
-	"github.com/devararishivian/antrekuy/internal/domain/repository"
-	"github.com/devararishivian/antrekuy/pkg/password"
-	"github.com/devararishivian/antrekuy/pkg/uuid"
+	"github.com/devararishivian/go-clean-code-ddd/internal/domain/entity"
+	"github.com/devararishivian/go-clean-code-ddd/internal/domain/repository"
+	"github.com/devararishivian/go-clean-code-ddd/pkg/password"
+	"github.com/devararishivian/go-clean-code-ddd/pkg/uuid"
 )
 
 type UserUseCaseImpl struct {

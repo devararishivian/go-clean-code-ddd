@@ -3,9 +3,9 @@ package memory
 import (
 	"context"
 	"errors"
-	"github.com/devararishivian/antrekuy/internal/domain/entity"
-	"github.com/devararishivian/antrekuy/internal/domain/repository"
-	"github.com/devararishivian/antrekuy/internal/infrastructure"
+	"github.com/devararishivian/go-clean-code-ddd/internal/domain/entity"
+	"github.com/devararishivian/go-clean-code-ddd/internal/domain/repository"
+	"github.com/devararishivian/go-clean-code-ddd/internal/infrastructure"
 	"github.com/redis/go-redis/v9"
 )
 

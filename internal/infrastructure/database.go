@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	appConfig "github.com/devararishivian/antrekuy/internal/config"
+	appConfig "github.com/devararishivian/go-clean-code-ddd/internal/config"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

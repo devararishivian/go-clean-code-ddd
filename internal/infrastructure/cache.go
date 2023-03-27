@@ -1,7 +1,7 @@
 package infrastructure
 
 import (
-	appConfig "github.com/devararishivian/antrekuy/internal/config"
+	appConfig "github.com/devararishivian/go-clean-code-ddd/internal/config"
 	"github.com/redis/go-redis/v9"
 )
 

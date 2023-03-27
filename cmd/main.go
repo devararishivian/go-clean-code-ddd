@@ -2,9 +2,9 @@ package main
 
 import (
 	"errors"
-	"github.com/devararishivian/antrekuy/internal/config"
-	"github.com/devararishivian/antrekuy/internal/infrastructure"
-	"github.com/devararishivian/antrekuy/internal/interface/api"
+	"github.com/devararishivian/go-clean-code-ddd/internal/config"
+	"github.com/devararishivian/go-clean-code-ddd/internal/infrastructure"
+	"github.com/devararishivian/go-clean-code-ddd/internal/interface/api"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"log"
