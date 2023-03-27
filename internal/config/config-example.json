@@ -1,0 +1,18 @@
+{
+  "database": {
+    "user": "postgres",
+    "password": "",
+    "host": "localhost",
+    "port": "5432",
+    "name": "database"
+  },
+  "cache": {
+    "address": "localhost:6379",
+    "password": "",
+    "db": 1
+  },
+  "server": {
+    "address": ":3000"
+  },
+  "jwtSecret": "9^$@c@88A2jW"
+}
