@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"fmt"
-	"github.com/devararishivian/antrekuy/internal/domain/service"
+	"github.com/devararishivian/go-clean-code-ddd/internal/domain/service"
 	"github.com/gofiber/fiber/v2"
 	"net/http"
 	"strings"

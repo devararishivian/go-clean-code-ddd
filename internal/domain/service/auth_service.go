@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/devararishivian/antrekuy/internal/domain/entity"
+	"github.com/devararishivian/go-clean-code-ddd/internal/domain/entity"
 	"github.com/golang-jwt/jwt/v5"
 )
 

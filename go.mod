@@ -1,4 +1,4 @@
-module github.com/devararishivian/antrekuy
+module github.com/devararishivian/go-clean-code-ddd
 
 go 1.19
 

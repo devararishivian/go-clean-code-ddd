@@ -1,6 +1,6 @@
 package service
 
-import "github.com/devararishivian/antrekuy/internal/domain/entity"
+import "github.com/devararishivian/go-clean-code-ddd/internal/domain/entity"
 
 type CacheService interface {
 	Set(cache entity.Cache) error

@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/devararishivian/antrekuy/internal/domain/service"
-	"github.com/devararishivian/antrekuy/internal/interface/validator"
-	"github.com/devararishivian/antrekuy/internal/presentation/model"
+	"github.com/devararishivian/go-clean-code-ddd/internal/domain/service"
+	"github.com/devararishivian/go-clean-code-ddd/internal/interface/validator"
+	"github.com/devararishivian/go-clean-code-ddd/internal/presentation/model"
 	"github.com/gofiber/fiber/v2"
 )
 
