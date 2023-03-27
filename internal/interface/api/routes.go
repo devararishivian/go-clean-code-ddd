@@ -10,10 +10,8 @@ import (
 )
 
 var (
-	authMiddleware *middleware.AuthMiddleware
+	AuthMiddleware *middleware.AuthMiddleware
 )
-
-// TODO: Refactor Dependency Injection to reuse auth middleware
 
 func RegisterRoutes(router fiber.Router, db *infrastructure.Database, redisClient *infrastructure.Redis) {
 	router.Get("/", func(c *fiber.Ctx) error {
@@ -22,8 +20,9 @@ func RegisterRoutes(router fiber.Router, db *infrastructure.Database, redisClien
 
 	v1Route := router.Group("v1")
 
-	registerUserRoutesV1(v1Route, db)
+	// registerAuthRoutesV1 must called before registering other routes
 	registerAuthRoutesV1(v1Route, db, redisClient)
+	registerUserRoutesV1(v1Route, db)
 }
 
 func registerUserRoutesV1(router fiber.Router, db *infrastructure.Database) {
@@ -33,6 +32,9 @@ func registerUserRoutesV1(router fiber.Router, db *infrastructure.Database) {
 
 	route := router.Group("user")
 	route.Post("/", handler.Store)
+	route.Get("/protected", AuthMiddleware.RequireAuth(), func(ctx *fiber.Ctx) error {
+		return ctx.JSON("PROTECTED USER")
+	})
 }
 
 func registerAuthRoutesV1(router fiber.Router, db *infrastructure.Database, redisClient *infrastructure.Redis) {
@@ -43,12 +45,12 @@ func registerAuthRoutesV1(router fiber.Router, db *infrastructure.Database, redi
 	useCase := usecase.NewAuthUseCase(userUseCase, cacheRepository)
 	handler := NewAuthHandler(useCase)
 
-	authMiddleware = middleware.NewAuthMiddleware(useCase)
+	AuthMiddleware = middleware.NewAuthMiddleware(useCase)
 
 	route := router.Group("auth")
 	route.Post("/", handler.Authenticate)
-	route.Post("/refresh", handler.RefreshToken)
-	route.Get("/protected", authMiddleware.RequireAuth(), func(ctx *fiber.Ctx) error {
+	route.Post("/revoke", handler.UnAuthenticate)
+	route.Get("/protected", AuthMiddleware.RequireAuth(), func(ctx *fiber.Ctx) error {
 		return ctx.JSON("MASOK")
 	})
 }

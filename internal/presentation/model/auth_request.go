@@ -5,6 +5,6 @@ type AuthRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
-type RefreshTokenRequest struct {
-	RefreshToken string `json:"refresh_token" validate:"required"`
+type UnAuthRequest struct {
+	Email string `json:"email" validate:"required"`
 }

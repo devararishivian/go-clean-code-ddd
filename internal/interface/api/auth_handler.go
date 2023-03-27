@@ -5,7 +5,6 @@ import (
 	"github.com/devararishivian/antrekuy/internal/interface/validator"
 	"github.com/devararishivian/antrekuy/internal/presentation/model"
 	"github.com/gofiber/fiber/v2"
-	"strings"
 )
 
 type AuthHandler struct {
@@ -37,20 +36,17 @@ func (h *AuthHandler) Authenticate(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, err.Error())
 	}
 
-	accessToken, refreshToken, err := h.authService.GenerateToken(authenticatedUser)
+	accessToken, err := h.authService.GenerateToken(authenticatedUser)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	result.AccessToken = accessToken
-	result.RefreshToken = refreshToken
-
 	return c.Status(fiber.StatusOK).JSON(result)
 }
 
-func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
-	request := new(model.RefreshTokenRequest)
-	var result model.AuthResponse
+func (h *AuthHandler) UnAuthenticate(c *fiber.Ctx) error {
+	request := new(model.UnAuthRequest)
 
 	if err := c.BodyParser(request); err != nil {
 		return fiber.NewError(fiber.StatusUnprocessableEntity, err.Error())
@@ -60,22 +56,11 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(err)
 	}
 
-	authHeader := c.Get("Authorization")
-
-	// Split the Authorization header into two authHeaderParts: Bearer and the token
-	authHeaderParts := strings.Split(authHeader, " ")
-	if len(authHeaderParts) != 2 || strings.ToLower(authHeaderParts[0]) != "bearer" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "invalid Authorization header format",
-		})
+	if err := h.authService.UnAuthenticate(request.Email); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	newAccessToken, newRefreshToken, err := h.authService.RefreshToken(authHeaderParts[1], request.RefreshToken)
-	if err != nil {
-		return fiber.NewError(fiber.StatusUnauthorized, err.Error())
-	}
-
-	result.AccessToken = newAccessToken
-	result.RefreshToken = newRefreshToken
-	return c.Status(fiber.StatusOK).JSON(result)
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "success un-authenticate user",
+	})
 }
